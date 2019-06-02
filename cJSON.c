@@ -88,6 +88,7 @@ CJSON_PUBLIC(char *) cJSON_GetStringValue(cJSON *item) {
 }
 
 /* This is a safeguard to prevent copy-pasters from using incompatible C and header files */
+/* 避免由于拷贝导致的cJSON.c和cJSON.h版本不对应,版本信息宏在cJSON.h中定义,若不匹配编译时报错 */
 #if (CJSON_VERSION_MAJOR != 1) || (CJSON_VERSION_MINOR != 7) || (CJSON_VERSION_PATCH != 11)
     #error cJSON.h and cJSON.c have different versions. Make sure that both have the same.
 #endif
@@ -95,6 +96,7 @@ CJSON_PUBLIC(char *) cJSON_GetStringValue(cJSON *item) {
 CJSON_PUBLIC(const char*) cJSON_Version(void)
 {
     static char version[15];
+    /* %i == %d 都表示 signed integer*/
     sprintf(version, "%i.%i.%i", CJSON_VERSION_MAJOR, CJSON_VERSION_MINOR, CJSON_VERSION_PATCH);
 
     return version;
@@ -103,11 +105,12 @@ CJSON_PUBLIC(const char*) cJSON_Version(void)
 /* Case insensitive string comparison, doesn't consider two NULL pointers equal though */
 static int case_insensitive_strcmp(const unsigned char *string1, const unsigned char *string2)
 {
+    /* 其中一个字符串等于NULL，认为不相等，两个都等于NULL同样认为不等 */
     if ((string1 == NULL) || (string2 == NULL))
     {
         return 1;
     }
-
+    /* 比较的是同一个字符串 == */
     if (string1 == string2)
     {
         return 0;
@@ -115,6 +118,7 @@ static int case_insensitive_strcmp(const unsigned char *string1, const unsigned 
 
     for(; tolower(*string1) == tolower(*string2); (void)string1++, string2++)
     {
+        /* *string1 == '\0' && *string2 == '\0' */
         if (*string1 == '\0')
         {
             return 0;
@@ -155,7 +159,7 @@ static void * CJSON_CDECL internal_realloc(void *pointer, size_t size)
 #define static_strlen(string_literal) (sizeof(string_literal) - sizeof(""))
 
 static internal_hooks global_hooks = { internal_malloc, internal_free, internal_realloc };
-
+/*前一个const表示hooks指向的内存不能修改,后一个const表明指针hooks的指向不能更改*/
 static unsigned char* cJSON_strdup(const unsigned char* string, const internal_hooks * const hooks)
 {
     size_t length = 0;
@@ -165,7 +169,7 @@ static unsigned char* cJSON_strdup(const unsigned char* string, const internal_h
     {
         return NULL;
     }
-
+    /* sizeof("")结束字符 */
     length = strlen((const char*)string) + sizeof("");
     copy = (unsigned char*)hooks->allocate(length);
     if (copy == NULL)
@@ -248,6 +252,7 @@ CJSON_PUBLIC(void) cJSON_Delete(cJSON *item)
 static unsigned char get_decimal_point(void)
 {
 #ifdef ENABLE_LOCALES
+/*例子 http://www.cplusplus.com/reference/clocale/localeconv/ */
     struct lconv *lconv = localeconv();
     return (unsigned char) lconv->decimal_point[0];
 #else
@@ -320,7 +325,8 @@ static cJSON_bool parse_number(cJSON * const item, parse_buffer * const input_bu
     }
 loop_end:
     number_c_string[i] = '\0';
-
+    
+    /*convert string to double*/
     number = strtod((const char*)number_c_string, (char**)&after_end);
     if (number_c_string == after_end)
     {
@@ -976,7 +982,7 @@ static parse_buffer *buffer_skip_whitespace(parse_buffer * const buffer)
     {
         return NULL;
     }
-
+    /*空格ascii码 32,cr ascii码 13,lf ascii码 12*/
     while (can_access_at_index(buffer, 0) && (buffer_at_offset(buffer)[0] <= 32))
     {
        buffer->offset++;
@@ -997,7 +1003,7 @@ static parse_buffer *skip_utf8_bom(parse_buffer * const buffer)
     {
         return NULL;
     }
-
+    /*UTF-8 BOM https://en.wikipedia.org/wiki/Byte_order_mark */
     if (can_access_at_index(buffer, 4) && (strncmp((const char*)buffer_at_offset(buffer), "\xEF\xBB\xBF", 3) == 0))
     {
         buffer->offset += 3;
@@ -2195,15 +2201,17 @@ CJSON_PUBLIC(cJSON_bool) cJSON_ReplaceItemViaPointer(cJSON * const parent, cJSON
 
     replacement->next = item->next;
     replacement->prev = item->prev;
-
+    /* 不是最后一个,设置next */
     if (replacement->next != NULL)
     {
         replacement->next->prev = replacement;
     }
+    /* 不是第一个,设置prev */
     if (replacement->prev != NULL)
     {
         replacement->prev->next = replacement;
     }
+    /* 如果是第一个的话parent->child = replacement*/
     if (parent->child == item)
     {
         parent->child = replacement;
@@ -2438,12 +2446,14 @@ CJSON_PUBLIC(cJSON *) cJSON_CreateIntArray(const int *numbers, int count)
             cJSON_Delete(a);
             return NULL;
         }
+        /* i=0 时插入第一个 */
         if(!i)
         {
             a->child = n;
         }
         else
         {
+            /* p== NULL时走上面逻辑,调用suffix_object需保证p 与 n均不等于NULL */
             suffix_object(p, n);
         }
         p = n;
