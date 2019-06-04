@@ -1858,6 +1858,7 @@ static cJSON *create_reference(const cJSON *item, const internal_hooks * const h
     reference->string = NULL;
     reference->type |= cJSON_IsReference;
     reference->next = reference->prev = NULL;
+    /*valuestring的值从item拷贝而来，因此cJSON_Delete时不释放避免double free*/
     return reference;
 }
 
@@ -2744,7 +2745,7 @@ CJSON_PUBLIC(void) cJSON_Minify(char *json)
     /* and null-terminate. */
     *into = '\0';
 }
-
+/*检查类型时与0XFF因为类型值最大cJSON_Raw 128*/
 CJSON_PUBLIC(cJSON_bool) cJSON_IsInvalid(const cJSON * const item)
 {
     if (item == NULL)
