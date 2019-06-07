@@ -278,6 +278,7 @@ typedef struct
 #define buffer_at_offset(buffer) ((buffer)->content + (buffer)->offset)
 
 /* Parse the input text to generate a number, and populate the result into item. */
+/* 解析输入生成数字，把结果填充到item */
 static cJSON_bool parse_number(cJSON * const item, parse_buffer * const input_buffer)
 {
     double number = 0;
@@ -711,6 +712,7 @@ fail:
 }
 
 /* Parse the input text into an unescaped cinput, and populate item. */
+/* 解析输入成带转义的输入并填充item */
 static cJSON_bool parse_string(cJSON * const item, parse_buffer * const input_buffer)
 {
     const unsigned char *input_pointer = buffer_at_offset(input_buffer) + 1;
@@ -735,7 +737,7 @@ static cJSON_bool parse_string(cJSON * const item, parse_buffer * const input_bu
             {
                 if ((size_t)(input_end + 1 - input_buffer->content) >= input_buffer->length)
                 {
-                    /* prevent buffer overflow when last input character is a backslash */
+                    /* prevent buffer overflow when last input character is a backslash \ */
                     goto fail;
                 }
                 skipped_bytes++;
@@ -1858,7 +1860,7 @@ static cJSON *create_reference(const cJSON *item, const internal_hooks * const h
     reference->string = NULL;
     reference->type |= cJSON_IsReference;
     reference->next = reference->prev = NULL;
-    /*valuestring的值从item拷贝而来，因此cJSON_Delete时不释放避免double free*/
+    /*valuestring的值从item拷贝而来，因此cJSON_Delete时不释放reference的valuestring child避免double free*/
     return reference;
 }
 
@@ -2202,12 +2204,12 @@ CJSON_PUBLIC(cJSON_bool) cJSON_ReplaceItemViaPointer(cJSON * const parent, cJSON
 
     replacement->next = item->next;
     replacement->prev = item->prev;
-    /* 不是最后一个,设置next */
+    /* 原来的item,不是最后一个,设置next */
     if (replacement->next != NULL)
     {
         replacement->next->prev = replacement;
     }
-    /* 不是第一个,设置prev */
+    /* 原来的item,不是第一个,设置prev */
     if (replacement->prev != NULL)
     {
         replacement->prev->next = replacement;

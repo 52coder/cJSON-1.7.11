@@ -272,6 +272,7 @@ CJSON_PUBLIC(double) cJSON_SetNumberHelper(cJSON *object, double number);
 #define cJSON_SetNumberValue(object, number) ((object != NULL) ? cJSON_SetNumberHelper(object, (double)number) : (number))
 
 /* Macro for iterating over an array or object */
+/* 数组 对象 迭代使用该宏复杂度o(n),如果使用cJSON_GetArrayItem 和cJSON_GetArraySize复杂度为O(n²) */
 #define cJSON_ArrayForEach(element, array) for(element = (array != NULL) ? (array)->child : NULL; element != NULL; element = element->next)
 
 /* malloc/free objects using the malloc/free functions that have been set with cJSON_InitHooks */
